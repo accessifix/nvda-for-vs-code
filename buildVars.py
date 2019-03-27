@@ -23,7 +23,7 @@ addon_info = {
 	# Author(s)
 	"addon_author" : u"Pawel Urbanski <pawel@pawelurbanski.com>",
 	# URL for the add-on documentation support
-	"addon_url" : https://github.com/pawelurbanski/nvda-for-vs-code,
+	"addon_url" : "https://github.com/pawelurbanski/nvda-for-vs-code",
 	# Documentation file name
 	"addon_docFileName" : "readme.html",
 	# Minimum NVDA version supported (e.g. "2018.3.0")
