@@ -29,7 +29,7 @@ class VSCodeEditor(BaseEditor):
 # NVDA was reading the entire line after every code completion.
 # This script handler reports last completed item.
 # It is triggered by the enter key for caret event is not fired.
-# There is one issue: last item is read when moving to the next line.
+# There is one issue: last item is sometimes read when moving to the next line.
 # It happens when you scroll back up and to the end of line and hit enter moving to the next line.
 
 	def script_HandleInteliSense(self, gesture):
@@ -45,6 +45,7 @@ class VSCodeEditor(BaseEditor):
 
 	def processLine(self, ti):
 		self.appModule.PrevStartOffset = ti._start._startOffset
+		self.appModule.PrevEndOffset = ti._start_endOffset
 		# Get the textInfo object for a current line
 		TextInfo = MozillaCompoundTextInfo
 		curr = self.makeTextInfo(textInfos.POSITION_SELECTION)
@@ -52,17 +53,21 @@ class VSCodeEditor(BaseEditor):
 		curr.expand(textInfos.UNIT_LINE)
 		# Assign short variables for later conditions
 		cs = curr._start._startOffset # Current line startOffset
+		ce = curr._start._endOffset # Current line end offset
 		os = self.appModule.PrevStartOffset # startOffset from previous invocation
+		oe = self.appModule.PrevEndOffset # End offset from previous invocation
 		# If old and current startOffsets are different we moved to a new line
 		if not os == cs:
 			# Prevent reading editor group info after moving to next line
 			# Script does it only after recent completion.
 			# Scrolling up and down through the code works well.
 			self.name = "" 
-			# Update OldStartOffset variable to the current line's startOffset
+			# Update offset values
 			self.appModule.PrevStartOffset = curr._start._startOffset
+			self.appModule.PrevEndOffset = curr._start_endOffset
+		# If we are in teh same line, do not read the entire line
 		elif os == cs:
-			# We are in the same line, so read only suggested items.
+			# We are in the same line, so read only inserted item.
 			# Do not read the line from the beginning.
 			# Read back what was inserted by the user
 			TextInfo = MozillaCompoundTextInfo
@@ -74,6 +79,7 @@ class VSCodeEditor(BaseEditor):
 
 class AppModule(appModuleHandler.AppModule):
 	PrevStartOffset = 0
+	PrevEndOffset = 0
 
 	def chooseNVDAObjectOverlayClasses(self, obj, clsList):
 		super(AppModule, self).chooseNVDAObjectOverlayClasses(obj, clsList)
