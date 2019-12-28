@@ -5,6 +5,7 @@ Please note that Microsoft Visual Studio Code is not a Microsoft Visual Studio I
 
 ## Features of this add-on
 
+* The add-on is Python 3 compatible, and passed testing under the first beta release of NVDA 2019.3,
 * Keeping focus in the editor - preventing switching off forms mode after pressing escape to leave intelisense or cancel some other operation,
 * Use NVDA key + space to leave forms mode when you need it,
 * Handling completion of intelisense items, and reading only the inserted item, without reading the entire current line,
