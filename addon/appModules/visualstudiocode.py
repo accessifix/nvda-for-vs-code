@@ -3,6 +3,7 @@
 # Contains shared code imported by release specific modules.
 import appModuleHandler
 import eventHandler
+import keyboardHandler
 import speech
 from comtypes import COMError
 import oleacc
@@ -19,33 +20,21 @@ from scriptHandler import script
 
 class VSCodeEditor(BaseEditor):
 
-	def event_gainFocus(self) :
-		super(VSCodeEditor, self).event_gainFocus()
-		TextInfo = MozillaCompoundTextInfo
-		ti = self.makeTextInfo(textInfos.POSITION_SELECTION)
-		ti.expand(textInfos.UNIT_LINE)
-		self.processLine(ti)
-
-# NVDA was reading the entire line after every code completion.
-# This script handler reports last completed item.
+	# Handle gain focus event for the editor.
+	def event_gainFocus(self):
+		super(VSCodeEditor,self).event_gainFocus()
+		self.processLine()
+# Handle reading out just an inserted item.
 # It is triggered by the enter key for caret event is not fired.
-# There is one issue: last item is sometimes read when moving to the next line.
-# It happens when you scroll back up and to the end of line and hit enter moving to the next line.
-
 	def script_HandleInteliSense(self, gesture):
 		gesture.send()
-		TextInfo = MozillaCompoundTextInfo
-		ti = self.makeTextInfo(textInfos.POSITION_SELECTION)
-		ti.collapse()
-		ti.expand(textInfos.UNIT_LINE)
-		self.processLine(ti)
+		self.processLine()
 	__gestures = {
 		"kb:enter":"HandleInteliSense",
 	}
 
-	def processLine(self, ti):
-		self.appModule.PrevStartOffset = ti._start._startOffset
-		self.appModule.PrevEndOffset = ti._start_endOffset
+	# Logic for processing lines of code
+	def processLine(self):
 		# Get the textInfo object for a current line
 		TextInfo = MozillaCompoundTextInfo
 		curr = self.makeTextInfo(textInfos.POSITION_SELECTION)
@@ -56,28 +45,35 @@ class VSCodeEditor(BaseEditor):
 		ce = curr._start._endOffset # Current line end offset
 		os = self.appModule.PrevStartOffset # startOffset from previous invocation
 		oe = self.appModule.PrevEndOffset # End offset from previous invocation
-		# If old and current startOffsets are different we moved to a new line
-		if not os == cs:
-			# Prevent reading editor group info after moving to next line
-			# Script does it only after recent completion.
-			# Scrolling up and down through the code works well.
-			self.name = "" 
-			# Update offset values
-			self.appModule.PrevStartOffset = curr._start._startOffset
-			self.appModule.PrevEndOffset = curr._start_endOffset
-		# If we are in teh same line, do not read the entire line
-		elif os == cs:
-			# We are in the same line, so read only inserted item.
+
+		# If we are in the same line, do not read the entire line
 			# Do not read the line from the beginning.
-			# Read back what was inserted by the user
+			# Read back the inserted completion item.
+		if os == cs:
 			TextInfo = MozillaCompoundTextInfo
-			line = self.makeTextInfo(textInfos.POSITION_SELECTION)
-			line.collapse()
-			line.expand(textInfos.UNIT_WORD)
+			insertedItem = self.makeTextInfo(textInfos.POSITION_SELECTION)
+			insertedItem.collapse()
+			insertedItem.expand(textInfos.UNIT_WORD)
 			speech.cancelSpeech()
-			speech.speakTextInfo(line,textInfos.UNIT_WORD, reason=controlTypes.REASON_CHANGE, suppressBlanks=True)
+			speech.speakTextInfo(insertedItem,textInfos.UNIT_WORD, reason=controlTypes.REASON_FOCUS, suppressBlanks=True)
+			insertedItem.collapse()
+			insertedItem.expand(textInfos.UNIT_LINE)
+			# Updae global text offsets
+			self.appModule.PrevStartOffset = insertedItem._start._startOffset
+			self.appModule.PrevEndOffset = insertedItem._start._endOffset
+		else:
+			TextInfo = MozillaCompoundTextInfo
+			currentLine = self.makeTextInfo(textInfos.POSITION_SELECTION)
+			currentLine.collapse()
+			currentLine.expand(textInfos.UNIT_LINE)
+			speech.cancelSpeech()
+			speech.speakTextInfo(currentLine,textInfos.UNIT_LINE, reason=controlTypes.REASON_FOCUS, suppressBlanks=True)
+			# Update offset values	
+			self.appModule.PrevStartOffset = currentLine._start._startOffset
+			self.appModule.PrevEndOffset = currentLine._start._endOffset
 
 class AppModule(appModuleHandler.AppModule):
+	# Global variables used to control line character offsets
 	PrevStartOffset = 0
 	PrevEndOffset = 0
 
@@ -86,8 +82,12 @@ class AppModule(appModuleHandler.AppModule):
 		if obj.windowClassName == "Chrome_RenderWidgetHostHWND" and obj.role == controlTypes.ROLE_EDITABLETEXT:
 			clsList.insert(0, VSCodeEditor)
 
+	# Send escape key when for example quitting code completion
 	def script_FixFocus(self, gesture):
 		gesture.send()
 	__gestures = {
 		"kb:escape":"FixFocus",
 	}
+	# Prevent repeat reading edito type of main eidtor window
+	controlTypes.silentRolesOnFocus.add(controlTypes.ROLE_EDITABLETEXT)
+	controlTypes.silentRolesOnFocus.add(controlTypes.ROLE_TREEVIEW)
