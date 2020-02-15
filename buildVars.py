@@ -11,7 +11,7 @@ addon_info = {
 	# for previously unpublished addons, please follow the community guidelines at:
 	# https://bitbucket.org/nvdaaddonteam/todo/raw/master/guideLines.txt
 	# add-on Name, internal for nvda
-	"addon_name" : "NVDA-For-VS-Code",
+	"addon_name" : "nvda-for-vs-code",
 	# Add-on summary, usually the user visible name of the addon.
 	# Translators: Summary for this add-on to be shown on installation and add-on information.
 	"addon_summary" : _("NVDA-For-VS-Code"),
@@ -19,15 +19,15 @@ addon_info = {
 	# Translators: Long description to be shown for this add-on on add-on information from add-ons manager
 	"addon_description" : _("NVDA add-on for Microsoft Visual Studio Code improving focus management, editor behavior, and code completion."),
 	# version
-	"addon_version" : "1.0.2",
+	"addon_version" : "20.0",
 	# Author(s)
 	"addon_author" : u"Pawel Urbanski <pawel@pawelurbanski.com>",
 	# URL for the add-on documentation support
-	"addon_url" : None,
+	"addon_url" : "https://github.com/pawelurbanski/nvda-for-vs-code",
 	# Documentation file name
 	"addon_docFileName" : "readme.html",
 	# Minimum NVDA version supported (e.g. "2018.3.0")
-	"addon_minimumNVDAVersion" : "2018.1",
+	"addon_minimumNVDAVersion" : "2019.1",
 	# Last NVDA version supported/tested (e.g. "2018.4.0", ideally more recent than minimum version)
 	"addon_lastTestedNVDAVersion" : "2019.3",
 	# Add-on update channel (default is stable or None)
