@@ -1,5 +1,5 @@
 # NVDA Add-on for Microsoft Visual studio Code
-# Author: Pawel Urbanski <pawel@pawelurbanski.com>, under GPL licence.
+# Author: Pawel Urbanski <support@accessifix.com>, under GPL licence.
 # Contains shared code imported by release specific modules.
 import appModuleHandler
 import eventHandler
