@@ -1,0 +1,33 @@
+{
+    "editor.accessibilitySupport": "on",
+    "python.linting.enabled": true,
+    "python.linting.maxNumberOfProblems": 10000,
+    "python.linting.flake8Args": [
+        "--config=..\\nvda-sources\\tests\\lint\\flake8.ini",
+"--use-flake8-tabs=true"
+    ],
+    "python.linting.flake8Enabled": true,
+    "python.linting.pylintEnabled": false,
+    "python.autoComplete.extraPaths": [
+        "addon", 
+        "../nvda-sources/source",
+        "../nvda-sources/include/comtypes",
+        "../nvda-sources/include/configobj/src",
+        "../nvda-sources/include/pyserial",
+        "../nvda-sources/include/wxPython",
+        "../nvda-sources/miscDeps/python"
+    ],
+    "files.insertFinalNewline": true,
+    "files.trimFinalNewlines": true,
+    "editor.insertSpaces": false,
+    "python.testing.unittestArgs": [
+        "-v",
+        "-s",
+        "tests.unit",
+        "-p",
+        "test_*.py"
+    ],
+    "python.testing.pytestEnabled": false,
+    "python.testing.nosetestsEnabled": false,
+    "python.testing.unittestEnabled": false
+}
