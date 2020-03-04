@@ -1,5 +1,7 @@
 addon/doc/*.css
-addon/doc/en/
+addon/doc/**/*.html
+addon/**/__pycache__
+.vscode/.ropeproject/*
 *_docHandler.py
 *.html
 *.ini

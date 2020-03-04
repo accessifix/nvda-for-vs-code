@@ -1,93 +1,109 @@
-# NVDA Add-on for Microsoft Visual studio Code
-# Author: Pawel Urbanski <pawel@pawelurbanski.com>, under GPL licence.
+# Author: Pawel Urbanski <support@accessifix.com> under GPL licence.
 # Contains shared code imported by release specific modules.
-import appModuleHandler
-import eventHandler
-import keyboardHandler
-import speech
-from comtypes import COMError
-import oleacc
+# NVDA Add-on for Microsoft Visual studio Code
+
 import api
-import controlTypes
-import textInfos
+import appModuleHandler
+import braille
+import controlTypes as cTs
+import eventHandler
 import IAccessibleHandler
+import keyboardHandler
+import oleacc
+import speech
+import textInfos
+import ui
+from comtypes import COMError
+from logHandler import log
 from NVDAObjects.IAccessible import IAccessible
+from NVDAObjects.IAccessible import chromium as Electron
 from NVDAObjects.IAccessible import ia2Web
 from NVDAObjects.IAccessible.ia2TextMozilla import MozillaCompoundTextInfo
-import ui
 from NVDAObjects.IAccessible.ia2Web import Editor as BaseEditor
 from scriptHandler import script
 
-class VSCodeEditor(BaseEditor):
+
+class CodeEditor(BaseEditor):
+
+	# Remove states that are not needed to be announced on every focus.
+	# We overwrite a default method for a control that returns states.
+	def _get_states(self):
+		states = super(CodeEditor, self).states
+		states.discard(cTs.STATE_AUTOCOMPLETE)
+		states.discard(cTs.STATE_MULTILINE)
+		return states
 
 	# Handle gain focus event for the editor.
 	def event_gainFocus(self):
-		super(VSCodeEditor,self).event_gainFocus()
+		# Set the name of the editor to none to preventing speakint on every focus.
+		# The name of a currently opened file can be larnt from the widnow title.
+		# Set the role to an empty string instead of 'edit'.
+		# It will be skipped and not announced on every focus.
+		# This change applies only to the main code editor.
+		self.name = None
+		self.roleText = str('\0')
+		super(CodeEditor,self).event_gainFocus()
 		self.processLine()
-# Handle reading out just an inserted item.
-# It is triggered by the enter key for caret event is not fired.
-	def script_HandleInteliSense(self, gesture):
-		gesture.send()
-		self.processLine()
-	__gestures = {
-		"kb:enter":"HandleInteliSense",
-	}
+
+	# Handle lost focus event for the editor
+	def event_loseFocus(self):
+		# Set the name of the editor to none to preventing speakint on every focus.
+		# The name of a currently opened file can be larnt from the widnow title.
+		self.name = None
+		super(CodeEditor,self).event_loseFocus()
 
 	# Logic for processing lines of code
 	def processLine(self):
 		# Get the textInfo object for a current line
-		TextInfo = MozillaCompoundTextInfo
-		curr = self.makeTextInfo(textInfos.POSITION_SELECTION)
-		curr.collapse()
-		curr.expand(textInfos.UNIT_LINE)
+		currentLine = self.makeTextInfo(textInfos.POSITION_SELECTION)
+		currentLine.collapse()
+		currentLine.expand(textInfos.UNIT_LINE)
 		# Assign short variables for later conditions
-		cs = curr._start._startOffset # Current line startOffset
-		ce = curr._start._endOffset # Current line end offset
-		os = self.appModule.PrevStartOffset # startOffset from previous invocation
-		oe = self.appModule.PrevEndOffset # End offset from previous invocation
-
-		# If we are in the same line, do not read the entire line
-			# Do not read the line from the beginning.
-			# Read back the inserted completion item.
-		if os == cs:
-			TextInfo = MozillaCompoundTextInfo
-			insertedItem = self.makeTextInfo(textInfos.POSITION_SELECTION)
-			insertedItem.collapse()
-			insertedItem.expand(textInfos.UNIT_WORD)
+		lastOffset = self.appModule.lastStartOffset
+		currentOffset = currentLine._start._startOffset
+		# We want to prevent speaking the line from its beginning
+		# after every code completion.
+		# We may use the offsets for more advanced cases in the future.
+		if lastOffset == currentOffset:
+			self.appModule.lastStartOffset = currentOffset
+			# Do not read the line, but it gets displayed in Braille.
 			speech.cancelSpeech()
-			speech.speakTextInfo(insertedItem,textInfos.UNIT_WORD, reason=controlTypes.REASON_FOCUS, suppressBlanks=True)
-			insertedItem.collapse()
-			insertedItem.expand(textInfos.UNIT_LINE)
-			# Updae global text offsets
-			self.appModule.PrevStartOffset = insertedItem._start._startOffset
-			self.appModule.PrevEndOffset = insertedItem._start._endOffset
 		else:
-			TextInfo = MozillaCompoundTextInfo
-			currentLine = self.makeTextInfo(textInfos.POSITION_SELECTION)
-			currentLine.collapse()
-			currentLine.expand(textInfos.UNIT_LINE)
+			self.appModule.lastStartOffset = currentOffset
+			# Read the line - selection gets marked in Braille.
 			speech.cancelSpeech()
-			speech.speakTextInfo(currentLine,textInfos.UNIT_LINE, reason=controlTypes.REASON_FOCUS, suppressBlanks=True)
-			# Update offset values	
-			self.appModule.PrevStartOffset = currentLine._start._startOffset
-			self.appModule.PrevEndOffset = currentLine._start._endOffset
+			speech.speakTextInfo(currentLine, textInfos.UNIT_LINE, reason=cTs.REASON_FOCUS)
+			return
+
 
 class AppModule(appModuleHandler.AppModule):
-	# Global variables used to control line character offsets
-	PrevStartOffset = 0
-	PrevEndOffset = 0
+
+	# This module-scoped variable holds last start offset.
+	# It is declared on a module scope to not be reset within a editor class.
+	lastStartOffset = 0 # It is 0 in an empty file.
+
+	# Initialization method called on add-on load.
+	def __init__(self, *args, **kwargs):
+	# It will prevent speaking the type on every focus.
+		super(AppModule, self).__init__(*args, **kwargs)
+		cTs.silentRolesOnFocus.add(cTs.ROLE_TREEVIEW)
+		cTs.silentRolesOnFocus.add(cTs.ROLE_TREEVIEWITEM)
 
 	def chooseNVDAObjectOverlayClasses(self, obj, clsList):
 		super(AppModule, self).chooseNVDAObjectOverlayClasses(obj, clsList)
-		if obj.windowClassName == "Chrome_RenderWidgetHostHWND" and obj.role == controlTypes.ROLE_EDITABLETEXT:
-			clsList.insert(0, VSCodeEditor)
+	# Overwrite the standard editor class with a custom for Visual Studio Code.
+		if obj.windowClassName == "Chrome_RenderWidgetHostHWND" and obj.role == cTs.ROLE_EDITABLETEXT and cTs.STATE_MULTILINE in obj.states:
+			clsList.insert(0, CodeEditor)
 
-	# Send escape key when for example quitting code completion
+	# Send escape key to the application
+	# we must capture escape to prevent losing focus
 	def script_FixFocus(self, gesture):
 		gesture.send()
 	__gestures = {
 		"kb:escape":"FixFocus",
 	}
-	# Prevent repeat reading edito type of main eidtor window
-	controlTypes.silentRolesOnFocus.add(controlTypes.ROLE_EDITABLETEXT)
-	controlTypes.silentRolesOnFocus.add(controlTypes.ROLE_TREEVIEW)
+
+	# Add back TREVIEW and TREEVIEWITEM to roles spoken on focus.
+	def terminate(self):
+		cTs.silentRolesOnFocus.discard(cTs.ROLE_TREEVIEW)
+		cTs.silentRolesOnFocus.discard(cTs.ROLE_TREEVIEWITEM)
