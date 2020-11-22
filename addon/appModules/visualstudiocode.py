@@ -15,13 +15,24 @@ import textInfos
 import ui
 from comtypes import COMError
 from logHandler import log
+from NVDAObjects import NVDAObject
 from NVDAObjects.IAccessible import IAccessible
+from NVDAObjects.IAccessible.chromium import Document
 from NVDAObjects.IAccessible import chromium as Electron
 from NVDAObjects.IAccessible import ia2Web
 from NVDAObjects.IAccessible.ia2TextMozilla import MozillaCompoundTextInfo
 from NVDAObjects.IAccessible.ia2Web import Editor as BaseEditor
 from scriptHandler import script
 
+# Copied from the default NVDA add-on.
+# @todo: Fix automatic switching to browse mode.
+# It is useful when previewing Markdown documents as HTML.
+class VSCodeDocument(Document):
+	"""The only content in the root document node of Visual Studio code is the application object.
+	Creating a tree interceptor on this object causes a major slow down of Code.
+	Therefore, forcefully block tree interceptor creation.
+	"""
+	_get_treeInterceptorClass = NVDAObject._get_treeInterceptorClass
 
 class CodeEditor(BaseEditor):
 
@@ -33,67 +44,133 @@ class CodeEditor(BaseEditor):
 		states.discard(cTs.STATE_MULTILINE)
 		return states
 
+	# Normalize and compare 2 strings.
+	def compareStrings(self, currentName: str, lastName: str):
+		cN = str(currentName).lower()
+		lN = str(lastName).lower()
+		if cN == lN:
+			self.appModule.lastEditorName =cN
+			return None
+		else:
+			self.appModule.lastEditorName = cN
+			# The focus shifted to a new document and we are in a different line.
+			self.appModule.fromCompletion = False
+			return cN
 	# Handle gain focus event for the editor.
 	def event_gainFocus(self):
 		# Set the name of the editor to none to preventing speakint on every focus.
-		# The name of a currently opened file can be larnt from the widnow title.
+		# The name of a currently opened file can be read from the window title.
 		# Set the role to an empty string instead of 'edit'.
 		# It will be skipped and not announced on every focus.
 		# This change applies only to the main code editor.
-		self.name = None
+		self.name = self.compareStrings(self.name, self.appModule.lastEditorName)
 		self.roleText = str('\0')
+		speech.cancelSpeech()
 		super(CodeEditor,self).event_gainFocus()
+		speech.cancelSpeech()
 		self.processLine()
 
 	# Handle lost focus event for the editor
 	def event_loseFocus(self):
-		# Set the name of the editor to none to preventing speakint on every focus.
-		# The name of a currently opened file can be larnt from the widnow title.
+		# Set the name of the editor to none to prevent speaking on focus lose.
+		# The name of a currently opened file can be read from the window title.
 		self.name = None
 		super(CodeEditor,self).event_loseFocus()
 
 	# Logic for processing lines of code
 	def processLine(self):
+		# Cancel speech in advance.
+		speech.cancelSpeech()
 		# Get the textInfo object for a current line
 		currentLine = self.makeTextInfo(textInfos.POSITION_SELECTION)
 		currentLine.collapse()
 		currentLine.expand(textInfos.UNIT_LINE)
 		# Assign short variables for later conditions
-		lastOffset = self.appModule.lastStartOffset
-		currentOffset = currentLine._start._startOffset
+		lastStartOffset = self.appModule.lastStartOffset
+		currentStartOffset = currentLine._start._startOffset
 		# We want to prevent speaking the line from its beginning
 		# after every code completion.
 		# We may use the offsets for more advanced cases in the future.
-		if lastOffset == currentOffset:
-			self.appModule.lastStartOffset = currentOffset
-			# Do not read the line, but it gets displayed in Braille.
-			speech.cancelSpeech()
-		else:
-			self.appModule.lastStartOffset = currentOffset
-			# Read the line - selection gets marked in Braille.
-			speech.cancelSpeech()
-			speech.speakTextInfo(currentLine, textInfos.UNIT_LINE, reason=cTs.REASON_FOCUS)
+		# @todo: Prevent previously typed characters
+		# at the beginning of the line.
+		if( self.appModule.fromCompletion == True
+		or lastStartOffset == currentStartOffset
+		):
+			currentCursor = self.makeTextInfo(textInfos.POSITION_SELECTION)
+			currentCursor.collapse()
+			currentCursor.expand(textInfos.UNIT_LINE)
+			currentCursor._start._startOffset = currentCursor._start._endOffset
+			currentCursor.collapse()
+			currentCursor.expand(textInfos.UNIT_CHARACTER)
+			speech.speakTextInfo(
+			currentCursor, textInfos.UNIT_CHARACTER,
+			reason=cTs.REASON_MESSAGE, suppressBlanks=True)
 			return
+		else:
+			otherLine = self.makeTextInfo(textInfos.POSITION_SELECTION)
+			otherLine.collapse()
+			otherLine.expand(textInfos.UNIT_LINE)
+			speech.speakTextInfo(otherLine, textInfos.UNIT_LINE, reason=cTs.REASON_FOCUS)
+			self.appModule.lastOffset = otherLine._start._startOffset
+			return
+# A custom list item for code completion values.
+class CustomListItem(IAccessible):
 
+	def event_gainFocus(self):
+		speech.cancelSpeech()
+		self.roleText = str('\0') # An empty string.
+		self.roleTextBraille = str('\0') # An empty string.
+		super(CustomListItem, self).event_gainFocus()
+		# Set the flag that additionally informs we are in the same line.
+		self.appModule.fromCompletion = True
+
+	def eventlostFocus(self):
+		speech.cancelSpeech()
 
 class AppModule(appModuleHandler.AppModule):
 
 	# This module-scoped variable holds last start offset.
 	# It is declared on a module scope to not be reset within a editor class.
 	lastStartOffset = 0 # It is 0 in an empty file.
+	# The normalized name of the last focused editor.
+	lastEditorName = "Editor" # A placeholder value.
+	# A flag that specifies if the user was completing intellisense.
+	fromCompletion = False
 
 	# Initialization method called on add-on load.
 	def __init__(self, *args, **kwargs):
 	# It will prevent speaking the type on every focus.
 		super(AppModule, self).__init__(*args, **kwargs)
 		cTs.silentRolesOnFocus.add(cTs.ROLE_TREEVIEW)
-		cTs.silentRolesOnFocus.add(cTs.ROLE_TREEVIEWITEM)
 
 	def chooseNVDAObjectOverlayClasses(self, obj, clsList):
 		super(AppModule, self).chooseNVDAObjectOverlayClasses(obj, clsList)
+	# Overwrite the tree interceptor class.
+		if Document in clsList and obj.IA2Attributes.get("tag") == "#document":
+			clsList.insert(0, VSCodeDocument)
 	# Overwrite the standard editor class with a custom for Visual Studio Code.
-		if obj.windowClassName == "Chrome_RenderWidgetHostHWND" and obj.role == cTs.ROLE_EDITABLETEXT and cTs.STATE_MULTILINE in obj.states:
+		if( obj.windowClassName == "Chrome_RenderWidgetHostHWND"
+		and obj.role == cTs.ROLE_EDITABLETEXT
+		and cTs.STATE_MULTILINE in obj.states
+		and 'inputarea' in str(obj.IA2Attributes.get('class'))
+		):
 			clsList.insert(0, CodeEditor)
+		# Set the list role name for Braille to nothing using an empty character.
+		if( obj.role == cTs.ROLE_LIST
+		and 'monaco-list' in str(obj.IA2Attributes.get("class"))
+		):
+			obj.roleTextBraille = str('\0')
+		# Important: It is a temporary workaround.
+		# Set the Suggest completion list prefix to nothing by using an empty character.
+		# It will prevent NVDA from reading it every time
+		# when the intellisense completion pops up.
+		if obj.name == "Suggest":
+			obj.name = str('\0')
+		# Assign a custom list item class to the code completion item only.
+		if( obj.role == cTs.ROLE_LISTITEM
+		and 'monaco-list-row' in str(obj.IA2Attributes.get("class"))
+		): 
+			clsList.insert(0 , CustomListItem)
 
 	# Send escape key to the application
 	# we must capture escape to prevent losing focus
@@ -106,4 +183,4 @@ class AppModule(appModuleHandler.AppModule):
 	# Add back TREVIEW and TREEVIEWITEM to roles spoken on focus.
 	def terminate(self):
 		cTs.silentRolesOnFocus.discard(cTs.ROLE_TREEVIEW)
-		cTs.silentRolesOnFocus.discard(cTs.ROLE_TREEVIEWITEM)
+		cTs.silentRolesOnFocus.discard(cTs.ROLE_LIST)
