@@ -19,7 +19,7 @@ addon_info = {
 	# Translators: Long description to be shown for this add-on on add-on information from add-ons manager
 	"addon_description" : _("NVDA add-on for Microsoft Visual Studio Code improving focus management, editor behavior, and code completion."),
 	# version
-	"addon_version" : "20.0.1",
+	"addon_version" : "20.1.0",
 	# Author(s)
 	"addon_author" : u"Pawel Urbanski <support@accessifix.com>",
 	# URL for the add-on documentation support
@@ -29,7 +29,7 @@ addon_info = {
 	# Minimum NVDA version supported (e.g. "2018.3.0")
 	"addon_minimumNVDAVersion" : "2019.3",
 	# Last NVDA version supported/tested (e.g. "2018.4.0", ideally more recent than minimum version)
-	"addon_lastTestedNVDAVersion" : "2020.1",
+	"addon_lastTestedNVDAVersion" : "2020.3",
 	# Add-on update channel (default is stable or None)
 	"addon_updateChannel" : "stable",
 }
