@@ -1,7 +1,9 @@
+/nvda/**
 addon/doc/*.css
 addon/doc/**/*.html
 addon/**/__pycache__
 .vscode/.ropeproject/*
+
 *_docHandler.py
 *.html
 *.ini

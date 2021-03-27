@@ -2,6 +2,7 @@
 # Contains shared code imported by release specific modules.
 # NVDA Add-on for Microsoft Visual studio Code
 
+from os import name
 import api
 import appModuleHandler
 import braille
@@ -11,6 +12,7 @@ import IAccessibleHandler
 import keyboardHandler
 import oleacc
 import speech
+from speech import OutputReason
 import textInfos
 import ui
 from comtypes import COMError
@@ -103,14 +105,19 @@ class CodeEditor(BaseEditor):
 			currentCursor.collapse()
 			currentCursor.expand(textInfos.UNIT_CHARACTER)
 			speech.speakTextInfo(
-			currentCursor, textInfos.UNIT_CHARACTER,
-			reason=cTs.REASON_MESSAGE, suppressBlanks=True)
+			currentCursor,
+			textInfos.UNIT_CHARACTER,
+			reason=OutputReason.FOCUS,
+			suppressBlanks=True)
 			return
 		else:
 			otherLine = self.makeTextInfo(textInfos.POSITION_SELECTION)
 			otherLine.collapse()
 			otherLine.expand(textInfos.UNIT_LINE)
-			speech.speakTextInfo(otherLine, textInfos.UNIT_LINE, reason=cTs.REASON_FOCUS)
+			speech.speakTextInfo(
+			otherLine,
+			textInfos.UNIT_LINE,
+			reason=OutputReason.FOCUS)
 			self.appModule.lastOffset = otherLine._start._startOffset
 			return
 # A custom list item for code completion values.
@@ -143,6 +150,17 @@ class AppModule(appModuleHandler.AppModule):
 		super(AppModule, self).__init__(*args, **kwargs)
 		cTs.silentRolesOnFocus.add(cTs.ROLE_TREEVIEW)
 
+	# Assign a custom list class to the code completion item only.
+	def event_NVDAObject_init(self, obj):
+		if(
+			obj.role == cTs.ROLE_LIST
+			and str(obj.name).lower() == "suggest"
+			and "monaco-list" in str(obj.IA2Attributes.get("class"))
+		):
+			obj.name = str("\0")
+			obj.roleText = str("\0")
+
+
 	def chooseNVDAObjectOverlayClasses(self, obj, clsList):
 		super(AppModule, self).chooseNVDAObjectOverlayClasses(obj, clsList)
 	# Overwrite the tree interceptor class.
@@ -153,21 +171,12 @@ class AppModule(appModuleHandler.AppModule):
 		and obj.role == cTs.ROLE_EDITABLETEXT
 		and cTs.STATE_MULTILINE in obj.states
 		and 'inputarea' in str(obj.IA2Attributes.get('class'))
+		and not "Source Control" in str(obj.simpleParent.name)
 		):
 			clsList.insert(0, CodeEditor)
-		# Set the list role name for Braille to nothing using an empty character.
-		if( obj.role == cTs.ROLE_LIST
-		and 'monaco-list' in str(obj.IA2Attributes.get("class"))
-		):
-			obj.roleTextBraille = str('\0')
-		# Important: It is a temporary workaround.
-		# Set the Suggest completion list prefix to nothing by using an empty character.
-		# It will prevent NVDA from reading it every time
-		# when the intellisense completion pops up.
-		if obj.name == "Suggest":
-			obj.name = str('\0')
 		# Assign a custom list item class to the code completion item only.
-		if( obj.role == cTs.ROLE_LISTITEM
+		if(
+			obj.role == cTs.ROLE_LISTITEM
 		and 'monaco-list-row' in str(obj.IA2Attributes.get("class"))
 		): 
 			clsList.insert(0 , CustomListItem)

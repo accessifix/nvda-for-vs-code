@@ -1,25 +1,28 @@
 {
     "editor.accessibilitySupport": "on",
+    "editor.quickSuggestionsDelay": 10,
+    "files.insertFinalNewline": true,
+    "files.trimFinalNewlines": true,
+    //"editor.insertSpaces": false,
+    "python.languageServer": "Pylance",
+    "python.formatting.provider": "black",
     "python.linting.enabled": true,
-    "python.linting.maxNumberOfProblems": 10000,
+    "python.linting.maxNumberOfProblems": 1000,
     "python.linting.flake8Args": [
-        "--config=..\\nvda-sources\\tests\\lint\\flake8.ini",
+        "--config=..\\nvda\\tests\\lint\\flake8.ini",
 "--use-flake8-tabs=true"
     ],
     "python.linting.flake8Enabled": true,
     "python.linting.pylintEnabled": false,
-    "python.autoComplete.extraPaths": [
+    "python.analysis.extraPaths": [
         "addon", 
-        "../nvda-sources/source",
-        "../nvda-sources/include/comtypes",
-        "../nvda-sources/include/configobj/src",
-        "../nvda-sources/include/pyserial",
-        "../nvda-sources/include/wxPython",
-        "../nvda-sources/miscDeps/python"
+        "../nvda/source",
+        "../nvda/include/comtypes",
+        "../nvda/include/configobj/src",
+        "../nvda/include/pyserial",
+        "../nvda/include/wxPython",
+        "../nvda/miscDeps/python"
     ],
-    "files.insertFinalNewline": true,
-    "files.trimFinalNewlines": true,
-    "editor.insertSpaces": false,
     "python.testing.unittestArgs": [
         "-v",
         "-s",
