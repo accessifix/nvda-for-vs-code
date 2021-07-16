@@ -12,11 +12,7 @@ import IAccessibleHandler
 import keyboardHandler
 import oleacc
 import speech
-<<<<<<< HEAD
-from speech import OutputReason
-=======
 from controlTypes import OutputReason
->>>>>>> 21.0
 import textInfos
 import ui
 from comtypes import COMError
@@ -122,9 +118,6 @@ class CodeEditor(BaseEditor):
 			otherLine,
 			textInfos.UNIT_LINE,
 			reason=OutputReason.FOCUS)
-<<<<<<< HEAD
-			self.appModule.lastOffset = otherLine._start._startOffset
-=======
 			self.appModule.lastStartOffset = otherLine._start._startOffset
 			return
 
@@ -140,7 +133,6 @@ class CodeEditor(BaseEditor):
 			return
 		else:
 			self.appModule.lastStartOffset = lineStart
->>>>>>> 21.0
 			return
 
 # A custom list item for code completion values.
