@@ -2,6 +2,7 @@
 addon/doc/*.css
 addon/doc/**/*.html
 addon/**/__pycache__
+nvda/
 .vscode/.ropeproject/*
 
 *_docHandler.py

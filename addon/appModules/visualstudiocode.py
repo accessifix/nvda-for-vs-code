@@ -12,7 +12,11 @@ import IAccessibleHandler
 import keyboardHandler
 import oleacc
 import speech
+<<<<<<< HEAD
 from speech import OutputReason
+=======
+from controlTypes import OutputReason
+>>>>>>> 21.0
 import textInfos
 import ui
 from comtypes import COMError
@@ -99,11 +103,11 @@ class CodeEditor(BaseEditor):
 		or lastStartOffset == currentStartOffset
 		):
 			currentCursor = self.makeTextInfo(textInfos.POSITION_SELECTION)
-			currentCursor.collapse()
-			currentCursor.expand(textInfos.UNIT_LINE)
 			currentCursor._start._startOffset = currentCursor._start._endOffset
-			currentCursor.collapse()
-			currentCursor.expand(textInfos.UNIT_CHARACTER)
+			#currentCursor.collapse()
+			#currentCursor.expand(textInfos.UNIT_CHARACTER)
+			speech.cancelSpeech()
+			currentCursor.text = "\n"
 			speech.speakTextInfo(
 			currentCursor,
 			textInfos.UNIT_CHARACTER,
@@ -118,10 +122,37 @@ class CodeEditor(BaseEditor):
 			otherLine,
 			textInfos.UNIT_LINE,
 			reason=OutputReason.FOCUS)
+<<<<<<< HEAD
 			self.appModule.lastOffset = otherLine._start._startOffset
+=======
+			self.appModule.lastStartOffset = otherLine._start._startOffset
 			return
+
+	def event_caret(self):
+		super(CodeEditor, self).event_caret()
+		if self is api.getFocusObject() and not eventHandler.isPendingEvents('gainFocus'):
+			self.detectPossibleSelectionChange()
+		tx = self.makeTextInfo(textInfos.POSITION_SELECTION).copy()
+		tx.collapse()
+		tx.expand(textInfos.UNIT_LINE)
+		lineStart = tx._start._startOffset
+		if self.appModule.lastStartOffset == lineStart:
+			return
+		else:
+			self.appModule.lastStartOffset = lineStart
+>>>>>>> 21.0
+			return
+
 # A custom list item for code completion values.
 class CustomListItem(IAccessible):
+
+	# Remove states that are not needed to be announced on every focus.
+	# We overwrite a default method for a control that returns states.
+	def _get_states(self):
+		states = super(CustomListItem, self).states
+		states.discard(cTs.STATE_SELECTABLE)
+		states.discard(cTs.STATE_SELECTED)
+		return states
 
 	def event_gainFocus(self):
 		speech.cancelSpeech()
