@@ -9,19 +9,22 @@
     "python.linting.enabled": true,
     "python.linting.maxNumberOfProblems": 1000,
     "python.linting.flake8Args": [
-        "--config=..\\nvda\\tests\\lint\\flake8.ini",
+        "--config=..\\repos\\nvda\\tests\\lint\\flake8.ini",
 "--use-flake8-tabs=true"
     ],
     "python.linting.flake8Enabled": true,
     "python.linting.pylintEnabled": false,
+    "python.analysis.diagnosticMode": "openFilesOnly",
+    "python.analysis.typeCheckingMode": "basic",
+    "python.analysis.completeFunctionParens": true,
     "python.analysis.extraPaths": [
         "addon", 
-        "../nvda/source",
-        "../nvda/include/comtypes",
-        "../nvda/include/configobj/src",
-        "../nvda/include/pyserial",
-        "../nvda/include/wxPython",
-        "../nvda/miscDeps/python"
+        "${workspaceFolder}/repos/nvda/source",
+        "../repos/nvda/include/comtypes",
+        "../repos/nvda/include/configobj/src",
+        "../repos/nvda/include/pyserial",
+        "../repos/nvda/include/wxPython",
+        "../repos/nvda/miscDeps/python"
     ],
     "python.testing.unittestArgs": [
         "-v",
