@@ -9,8 +9,8 @@
     "python.linting.enabled": true,
     "python.linting.maxNumberOfProblems": 1000,
     "python.linting.flake8Args": [
-        "--config=..\\repos\\nvda\\tests\\lint\\flake8.ini",
-"--use-flake8-tabs=true"
+    "--config=..\\repos\\nvda\\tests\\lint\\flake8.ini",
+    "--use-flake8-tabs=true"
     ],
     "python.linting.flake8Enabled": true,
     "python.linting.pylintEnabled": false,

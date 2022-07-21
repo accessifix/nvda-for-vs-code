@@ -1,0 +1,3 @@
+[submodule "repos/nvda"]
+	path = repos/nvda
+	url = https://github.com/nvaccess/nvda
