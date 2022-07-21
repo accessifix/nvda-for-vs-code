@@ -7,6 +7,7 @@ import appModuleHandler
 import braille
 import controlTypes
 import eventHandler
+import globalVars
 import IAccessibleHandler
 import keyboardHandler
 import oleacc
@@ -43,20 +44,11 @@ class CodeEditor(BaseEditor):
 		states.discard(State.AUTOCOMPLETE)
 		states.discard(State.MULTILINE)
 		return states
-
-	def _get_name(self):
-		name = super(CodeEditor, self).name
-		if name:
-			if name.lower() == self.appModule.lastEditorName.lower():
-				return None
-			else:
-				return name
-		self.appModule.lastEditorName = name
-
+	
 	# Handle gain focus event for the editor.
 	def event_gainFocus(self):
 		# Set the role label text for braille to an empty string.
-		self.roleText = str('\0')
+		self.roleText = None
 		super(CodeEditor,self).event_gainFocus()
 		# Cancel speech to prevent reading the line after every completion.
 		speech.cancelSpeech()
@@ -66,13 +58,6 @@ class CodeEditor(BaseEditor):
 		if not CurrentLine.isCollapsed:
 			CurrentLine.expand(textInfos.UNIT_WORD)
 			ui.message(CurrentLine.text)
-
-	# Handle lost focus event for the editor
-	def event_loseFocus(self):
-		super(CodeEditor,self).event_loseFocus()
-		# Set the name of the editor to none to prevent speaking on focus lose.
-		# The name of a currently opened file can be read from the window title.
-		#self.name = None
 
 # A custom list item for code completion values.
 class CustomListItem(IAccessible):
@@ -86,12 +71,21 @@ class CustomListItem(IAccessible):
 		return states
 
 	def event_gainFocus(self):
-		# Set the role label text for braille to an empty string.
-		self.roleTextBraille = str('\0')
-		super(CustomListItem, self).event_gainFocus()
 
-	def event_lostFocus(self):
-		speech.cancelSpeech()
+		super(CustomListItem, self).event_gainFocus()
+		# Set the role label text for braille to an empty string.
+		self.roleText = None
+		self.roleTextBraille = None
+
+class CustomTreeviewItem(IAccessible):
+
+	def _get_states(self):
+		states = super(CustomTreeviewItem, self).states
+		states.discard(State.SELECTABLE)
+		if State.SELECTED in states:
+			states.discard(State.SELECTED)
+			states.add(State.CHECKED)
+		return states
 
 class AppModule(appModuleHandler.AppModule):
 
@@ -103,7 +97,8 @@ class AppModule(appModuleHandler.AppModule):
 		controlTypes.silentRolesOnFocus.add(Role.TREEVIEW)
 	# It is declared on a module scope to not be reset within a editor class.
 	# The normalized name of the last focused editor.
-		self.lastEditorName = "Editor" # A placeholder value.
+		if not hasattr(globalVars, 'lastEditorName'):
+			setattr(globalVars,'lastEditorName','Editor')
 
 	# Assign a custom list class to the code completion item only.
 	def event_NVDAObject_init(self, obj):
@@ -112,8 +107,8 @@ class AppModule(appModuleHandler.AppModule):
 			and str(obj.name).lower() == "suggest"
 			and "monaco-list" in str(obj.IA2Attributes.get("class"))
 		):
-			obj.name = str("\0")
-			obj.roleText = str("\0")
+			obj.name = str('\0')
+			obj.roleText = str('\0')
 
 	def chooseNVDAObjectOverlayClasses(self, obj, clsList):
 		super(AppModule, self).chooseNVDAObjectOverlayClasses(obj, clsList)
@@ -130,10 +125,12 @@ class AppModule(appModuleHandler.AppModule):
 			clsList.insert(0, CodeEditor)
 		# Assign a custom list item class to the code completion item only.
 		if(
-			obj.role == Role.LISTITEM
+		obj.role == Role.LISTITEM
 		and 'monaco-list-row' in str(obj.IA2Attributes.get("class"))
 		): 
 			clsList.insert(0 , CustomListItem)
+		if( obj.role == Role.TREEVIEWITEM ):
+			clsList.insert(0, CustomTreeviewItem)
 
 	# Send escape key to the application
 	# we must capture escape to prevent losing focus
