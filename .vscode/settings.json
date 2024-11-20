@@ -1,39 +1,39 @@
 {
-    "editor.accessibilitySupport": "on",
-    "editor.quickSuggestionsDelay": 10,
-    "files.insertFinalNewline": true,
-    "files.trimFinalNewlines": true,
-    //"editor.insertSpaces": false,
-    "python.languageServer": "Pylance",
-    "python.formatting.provider": "black",
-    "python.linting.enabled": true,
-    "python.linting.maxNumberOfProblems": 1000,
-    "python.linting.flake8Args": [
-    "--config=..\\repos\\nvda\\tests\\lint\\flake8.ini",
-    "--use-flake8-tabs=true"
-    ],
-    "python.linting.flake8Enabled": true,
-    "python.linting.pylintEnabled": false,
-    "python.analysis.diagnosticMode": "openFilesOnly",
-    "python.analysis.typeCheckingMode": "basic",
-    "python.analysis.completeFunctionParens": true,
-    "python.analysis.extraPaths": [
-        "addon", 
-        "${workspaceFolder}/repos/nvda/source",
-        "../repos/nvda/include/comtypes",
-        "../repos/nvda/include/configobj/src",
-        "../repos/nvda/include/pyserial",
-        "../repos/nvda/include/wxPython",
-        "../repos/nvda/miscDeps/python"
-    ],
-    "python.testing.unittestArgs": [
-        "-v",
-        "-s",
-        "tests.unit",
-        "-p",
-        "test_*.py"
-    ],
-    "python.testing.pytestEnabled": false,
-    "python.testing.nosetestsEnabled": false,
-    "python.testing.unittestEnabled": false
+	"editor.accessibilitySupport": "on",
+	"editor.acceptSuggestionOnCommitCharacter": true,
+	"editor.quickSuggestionsDelay": 10,
+	"files.insertFinalNewline": true,
+	"files.trimFinalNewlines": true,
+	"editor.insertSpaces": false,
+	"python.languageServer": "Pylance",
+	"python.formatting.provider": "black",
+	"python.linting.enabled": true,
+	"python.linting.maxNumberOfProblems": 1000,
+	"python.linting.flake8Args": [
+		"--config=..\\repos\\nvda\\tests\\lint\\flake8.ini",
+		"--use-flake8-tabs=true"
+	],
+	"python.linting.flake8Enabled": true,
+	"python.linting.pylintEnabled": false,
+	"python.analysis.diagnosticMode": "openFilesOnly",
+	"python.analysis.typeCheckingMode": "basic",
+	"python.analysis.completeFunctionParens": true,
+	"python.analysis.autoImportCompletions": true,
+	"python.analysis.extraPaths": [
+		"addon", 
+		"${workspaceFolder}/repos/nvda/source"
+	],
+	"flake8.args": ["--max-line=120", "--ignore=W191"],
+	"black-formatter.importStrategy": "fromEnvironment",
+	"black-formatter.args": ["--line-length=120"],
+	"python.testing.unittestArgs": [
+		"-v",
+		"-s",
+		"tests.unit",
+		"-p",
+		"test_*.py"
+	],
+	"python.testing.pytestEnabled": false,
+	"python.testing.nosetestsEnabled": false,
+	"python.testing.unittestEnabled": false
 }

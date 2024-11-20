@@ -17,11 +17,11 @@ addon_info = {
 	"addon_summary" : _("NVDA For VS Code"),
 	# Add-on description
 	# Translators: Long description to be shown for this add-on on add-on information from add-ons manager
-	"addon_description" : _("NVDA add-on for Microsoft Visual Studio Code improving focus management, editor behavior, and code completion."),
+	"addon_description" : _("NVDA add-on for Microsoft Visual Studio Code."),
 	# version
-	"addon_version" : "2022.1.1",
+	"addon_version" : "2024-11-20",
 	# Author(s)
-	"addon_author" : u"Pawel Urbanski <support@accessifix.com>",
+	"addon_author" : u"Pawel Urbanski",
 	# URL for the add-on documentation support
 	"addon_url" : "https://github.com/accessifix/nvda-for-vs-code",
 	# Documentation file name
@@ -29,9 +29,9 @@ addon_info = {
 	# Minimum NVDA version supported (e.g. "2018.3.0")
 	"addon_minimumNVDAVersion" : "2021.2",
 	# Last NVDA version supported/tested (e.g. "2018.4.0", ideally more recent than minimum version)
-	"addon_lastTestedNVDAVersion" : "2022.2",
+	"addon_lastTestedNVDAVersion" : "2050.1",
 	# Add-on update channel (default is stable or None)
-	"addon_updateChannel" : "stable",
+	"addon_updateChannel" : "none",
 }
 
 
