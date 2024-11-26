@@ -19,7 +19,7 @@ addon_info = {
 	# Translators: Long description to be shown for this add-on on add-on information from add-ons manager
 	"addon_description" : _("NVDA add-on for Microsoft Visual Studio Code."),
 	# version
-	"addon_version" : "2024-11-20",
+	"addon_version" : "2024-11-26",
 	# Author(s)
 	"addon_author" : u"Pawel Urbanski",
 	# URL for the add-on documentation support

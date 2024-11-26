@@ -2,6 +2,7 @@
 # Author: Pawel Urbanski <pawel@pawelurbanski.com>, under GPL licence.
 # Contains shared code imported by release specific modules.
 
+from enum import Enum
 import appModuleHandler
 import controlTypes
 import globalVars
@@ -11,7 +12,12 @@ from scriptHandler import script
 from NVDAObjects import NVDAObject
 from NVDAObjects.IAccessible import IAccessible
 from NVDAObjects.IAccessible.chromium import Document
-from NVDAObjects.IAccessible import EditableTextWithAutoSelectDetection as BaseEditor
+from NVDAObjects.behaviors import EditableTextWithoutAutoSelectDetection
+
+
+class StatusFlags(Enum):
+	readVSCodeLine = str.lower(str.strip('readVSCodeLine'))
+	readVSCodeEditor = str.lower(str.strip('readVSCodeEditor'))
 
 
 class VSCodeDocument(Document):
@@ -21,18 +27,25 @@ class VSCodeDocument(Document):
 	_get_treeInterceptorClass = NVDAObject._get_treeInterceptorClass
 
 
-class CodeEditor(BaseEditor):
+class CodeEditor(EditableTextWithoutAutoSelectDetection):
+	# The main custom class for the editor and editable fields.
 	announceNewLineText = False
 
 	def __init__(self):
 		# Use unprintable character to prevent speaking.
-		self.name = chr(4)
-		self.roleText = None
+		self.roleText = chr(4)
 		super().__init__()
 
 	def _get_name(self):
-		# Use unprintable character to prevent speaking.
-		return chr(4)
+		# Conditionally read the name of the file.
+		shouldReadName = False
+		if hasattr(globalVars, StatusFlags.readVSCodeEditor.value):
+			shouldReadName = getattr(globalVars, StatusFlags.readVSCodeEditor.value)
+		if shouldReadName:
+			return
+		else:
+			# Use unprintable character to prevent speaking.
+			return chr(4)
 
 	def _get_roleText(self):
 		# Use unprintable character to prevent speaking.
@@ -48,56 +61,82 @@ class CodeEditor(BaseEditor):
 
 	def event_typedCharacter(self, ch: str):
 		# Set the flag to allow echoing typed characters.
-		self.appModule.shouldSpeak = True
+		if hasattr(globalVars, StatusFlags.readVSCodeLine.value):
+			setattr(globalVars, StatusFlags.readVSCodeLine.value, True)
 		return super().event_typedCharacter(ch)
 
 	def event_gainFocus(self):
-		self.roleText = None
 		# Use unprintable character to prevent speaking.
 		self.name = chr(4)
-		speech.cancelSpeech()
+		self.roleText = chr(4)
 		super().event_gainFocus()
-		self.initAutoSelectDetection()
 
 	def event_focusEntered(self):
-		self.roleText = None
 		# Use unprintable character to prevent speaking.
 		self.name = chr(4)
-		speech.cancelSpeech()
+		self.roleText = chr(4)
 		super().event_focusEntered()
+
+	def event_loseFocus(self):
+		# Use unprintable character to prevent speaking.
+		self.name = chr(4)
+		self.roleText = chr(4)
+		if hasattr(globalVars, StatusFlags.readVSCodeLine.value):
+			setattr(globalVars, StatusFlags.readVSCodeLine.value, False)
+		super().event_loseFocus()
 
 	def event_valueChange(self):
 		# This event is triggered after typing or completion, and other changes.
-		# When the editor is focused and the flag is set sppech is allowed.
+		# When the editor is focused and the flag is set speech is allowed.
 		# Otherwise it is attempted to be canceled, to avoid rereading the line.
-		if self.hasFocus and self.appModule.shouldSpeak:
-			self.appModule.shouldSpeak = False
-			return
+		# Gets the flag that allows to bypass speech cancelation.
+		shouldReadName = False  # A local convenience variable.
+		if hasattr(globalVars, StatusFlags.readVSCodeEditor.value):
+			shouldReadName = getattr(globalVars, StatusFlags.readVSCodeEditor.value)
+		shouldReadLine = False  # A local convenience variable.
+		if hasattr(globalVars, StatusFlags.readVSCodeLine.value):
+			shouldReadLine = getattr(globalVars, StatusFlags.readVSCodeLine.value)
+		# Read the line after switching tabs or after typing or deletion.
+		shouldRead = shouldReadName or shouldReadLine
+		if self.hasFocus and shouldRead:
+			setattr(globalVars, StatusFlags.readVSCodeLine.value, False)
+			setattr(globalVars, StatusFlags.readVSCodeEditor.value, False)
+			super().event_valueChange()
 		else:
+			setattr(globalVars, StatusFlags.readVSCodeLine.value, False)
+			setattr(globalVars, StatusFlags.readVSCodeEditor.value, False)
 			speech.cancelSpeech()
-		super().event_valueChange()
-		if self.hasFocus and self.appModule.shouldSpeak:
-			self.appModule.shouldSpeak = False
-			return
-		else:
-			speech.cancelSpeech()
+
+	@script(gesture='kb:delete', canPropagate=True)
+	def script_speakAfterCaretDeleteCharacter(self, gesture):
+		# Enable reading the focused cahracter after deletion.
+		if hasattr(globalVars, StatusFlags.readVSCodeLine.value):
+			setattr(globalVars, StatusFlags.readVSCodeLine.value, True)
+		self.script_caret_deleteCharacter(gesture)
+
+	@script(gesture='kb:control+delete', canPropagate=True)
+	def script_speakAfterCaretDeleteWord(self, gesture):
+		# Enable reading the focused cahracter after deletion.
+		if hasattr(globalVars, StatusFlags.readVSCodeLine.value):
+			setattr(globalVars, StatusFlags.readVSCodeLine.value, True)
+		self.script_caret_deleteWord(gesture)
 
 
 class CustomListItem(IAccessible):
-	# A custom list item for code completion values.
-	# Remove states that are not needed to be announced on every focus.
-	# We overwrite a default method for a control that returns states.
+
+	def __init__(self):
+		# Set the role label text for braille to an empty string.
+		self.roleText = chr(4)
+		self.roleTextBraille = chr(4)
+		super().__init__()
+
 	def _get_states(self):
+		# Remove states that are not needed to be announced on every focus.
+		# We overwrite a default method for a control that returns states.
 		states = super(CustomListItem, self).states
 		states.discard(State.SELECTABLE)
 		states.discard(State.SELECTED)
 		return states
-
-	def __init__(self):
-		# Set the role label text for braille to an empty string.
-		self.roleText = None
-		self.roleTextBraille = None
-		super().__init__()
 
 
 class CustomTreeviewItem(IAccessible):
@@ -113,15 +152,18 @@ class CustomTreeviewItem(IAccessible):
 class AppModule(appModuleHandler.AppModule):
 
 	def __init__(self, *args, **kwargs):
-		self.shouldSpeak: bool = False
 		super(AppModule, self).__init__(*args, **kwargs)
-		# It will prevent speaking the type on every focus.
+		# It will prevent speaking the treeview type on every focus.
 		controlTypes.silentRolesOnFocus.add(Role.TREEVIEW)
-
-	# It is declared on a module scope to not be reset within a editor class.
-	# The normalized name of the last focused editor.
-		if not hasattr(globalVars, 'lastEditorName'):
-			setattr(globalVars, 'lastEditorName', 'Editor')
+		self.shouldSpeak: bool = False
+		# It is declared on a module scope to not be reset within a editor class.
+		# Set this flag to allow or cancel reading the line.
+		# It mostly applies to the code completion.
+		if not hasattr(globalVars, StatusFlags.readVSCodeLine.value):
+			setattr(globalVars, StatusFlags.readVSCodeLine.value, True)
+		# Allow to read the editor file name after focus changes.
+		if not hasattr(globalVars, StatusFlags.readVSCodeEditor.value):
+			setattr(globalVars, StatusFlags.readVSCodeEditor.value, True)
 
 	def event_NVDAObject_init(self, obj):
 		# Assign a custom list class to the code completion item only.
@@ -150,12 +192,35 @@ class AppModule(appModuleHandler.AppModule):
 		if (obj.role == Role.TREEVIEWITEM):
 			clsList.insert(0, CustomTreeviewItem)
 
-	@script(gesture="kb:escape")
-	def script_FixFocus(self, gesture):
+	def script_fixFocus(self, gesture):
 		# Send escape key to the application
-		# We must capture escape to prevent losing focus when leaving completion.
+		# We must capture escape to prevent losing focus when canceling completion.
 		gesture.send()
+
+	def script_shouldSpeakEditorName(self, gesture):
+		# Allow to read the tab file name after focus changes, or tab switching.
+		if hasattr(globalVars, StatusFlags.readVSCodeEditor.value):
+			setattr(globalVars, StatusFlags.readVSCodeEditor.value, True)
+		gesture.send()
+
+	__gestures = {
+		'kb:escape': script_fixFocus,
+		'kb:control+tab': script_shouldSpeakEditorName,
+		'kb:shift+control+tab': script_shouldSpeakEditorName,
+		'kb:alt+1': script_shouldSpeakEditorName,
+		'kb:alt+2': script_shouldSpeakEditorName,
+		'kb:alt+3': script_shouldSpeakEditorName,
+		'kb:alt+4': script_shouldSpeakEditorName,
+		'kb:alt+5': script_shouldSpeakEditorName,
+		'kb:alt+6': script_shouldSpeakEditorName,
+		'kb:alt+7': script_shouldSpeakEditorName,
+		'kb:alt+8': script_shouldSpeakEditorName,
+		'kb:alt+9': script_shouldSpeakEditorName,
+	}
 
 	def terminate(self):
 		# Add back TREVIEW and TREEVIEWITEM to roles spoken on focus.
 		controlTypes.silentRolesOnFocus.discard(Role.TREEVIEW)
+		# Remove the custom class attribute.
+		delattr(globalVars, StatusFlags.readVSCodeLine.value)
+		delattr(globalVars, StatusFlags.readVSCodeEditor.value)

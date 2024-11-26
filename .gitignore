@@ -10,4 +10,5 @@ addon/**/__pycache__
 *.pot
 *.py[co]
 *.nvda-addon
+*.json
 .sconsign.dblite

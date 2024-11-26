@@ -1,10 +1,12 @@
 {
 	"editor.accessibilitySupport": "on",
 	"editor.acceptSuggestionOnCommitCharacter": true,
-	"editor.quickSuggestionsDelay": 10,
+	"editor.quickSuggestionsDelay": 0,
+	"editor.insertSpaces": false,
+	"files.autoSave": "afterDelay",
+	"files.autoSaveDelay": 10000,
 	"files.insertFinalNewline": true,
 	"files.trimFinalNewlines": true,
-	"editor.insertSpaces": false,
 	"python.languageServer": "Pylance",
 	"python.formatting.provider": "black",
 	"python.linting.enabled": true,
@@ -17,8 +19,8 @@
 	"python.linting.pylintEnabled": false,
 	"python.analysis.diagnosticMode": "openFilesOnly",
 	"python.analysis.typeCheckingMode": "basic",
-	"python.analysis.completeFunctionParens": true,
 	"python.analysis.autoImportCompletions": true,
+	"python.analysis.extraCommitChars": true,
 	"python.analysis.extraPaths": [
 		"addon", 
 		"${workspaceFolder}/repos/nvda/source"

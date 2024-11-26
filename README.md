@@ -2,11 +2,13 @@
 
 This NVDA add-on provides fixes and improvements mostly for the editor component of the Microsoft Visual Studio Code editor. Please note that Microsoft Visual Studio Code is not a Microsoft Visual Studio IDE. It is a lightweight code editor.
 
+The add-on is in maintenance mode, developed on the best effort basis. Changes are introduced only when something serious is broken, or the implementation of improvements requires little effort. The author is looking for the new maintainer, whom he will introduce to the design and help in transition.
+
 ## Features of this add-on
 
 * The add-on supports all the editions, including: stable, insider, or local development,
-* Provides filtering of states that introduce verbose speech output,
-* Reading the entire line from the beginning after completion is attempted, subject to certain limitations.
+* Provides filtering of states that make speech output unnecessarily verbose,
+* Canceling reading the entire line from the beginning after completion is attempted, subject to certain limitations.
 
 ## Additional notes and issues
 
